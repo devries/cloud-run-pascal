@@ -1,20 +1,17 @@
-FROM python:3.7-slim
+FROM golang:1.13 as gobuild
+ADD invoke.go /src/invoke.go
+RUN cd /src && CGO_ENABLED=0 GOOS=linux go build -o invoke invoke.go
 
-# Copy local code to the container image.
-ENV APP_HOME /app
-WORKDIR $APP_HOME
-COPY . ./
-
-# Install production dependencies.
-RUN pip install -r requirements.txt
-
-# Compile the Pascal program
+FROM debian:buster as pascalbuild
 RUN apt-get update -y -q
 RUN apt-get install -y -q fpc
-RUN fpc roman.pas
 
-# Run the web service on container startup. Here we use the gunicorn
-# webserver, with one worker process and 8 threads.
-# For environments with multiple CPU cores, increase the number of workers
-# to be equal to the cores available.
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app
+ADD roman.pas /src/roman.pas
+RUN cd /src && fpc roman.pas
+
+FROM alpine:3.10
+COPY --from=gobuild /src/invoke /app/invoke
+COPY --from=pascalbuild /src/roman /app/roman
+
+WORKDIR /app
+CMD ["/app/invoke"]
