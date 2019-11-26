@@ -20,7 +20,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	input := strings.Trim(path, "/")
 
 	if len(input) == 0 {
-		errorResponse(w, 400, "Put a number as the path element to convert it to roman numerals")
+		writeResponse(w, 400, "Put a number as the path element to convert it to roman numerals")
 		return
 	}
 
@@ -30,24 +30,24 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.CommandContext(ctx, "/app/roman")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		errorResponse(w, 500, err.Error())
+		writeResponse(w, 500, err.Error())
 		return
 	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		errorResponse(w, 500, err.Error())
+		writeResponse(w, 500, err.Error())
 		return
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		errorResponse(w, 500, err.Error())
+		writeResponse(w, 500, err.Error())
 		return
 	}
 
 	if err := cmd.Start(); err != nil {
-		errorResponse(w, 500, err.Error())
+		writeResponse(w, 500, err.Error())
 		return
 	}
 
@@ -57,21 +57,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	stout, _ := ioutil.ReadAll(stdout)
 
 	if err := cmd.Wait(); err != nil {
-		errorResponse(w, 500, string(seout))
+		writeResponse(w, 500, string(seout))
 		return
 	}
 
 	if len(seout) > 0 {
-		errorResponse(w, 400, string(seout))
+		writeResponse(w, 400, string(seout))
 		return
 	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write(stout)
+	writeResponse(w, 200, string(stout))
 }
 
 func main() {
-	log.Print("helloworld: starting server...")
-
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", handler)
@@ -118,7 +115,7 @@ func loggingHandler(next http.Handler) http.Handler {
 	})
 }
 
-func errorResponse(w http.ResponseWriter, code int, message string) {
+func writeResponse(w http.ResponseWriter, code int, message string) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(code)
 	w.Write([]byte(message))
