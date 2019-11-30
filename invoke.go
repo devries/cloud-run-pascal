@@ -13,7 +13,7 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	log.Print("helloworld: received a request")
+	log.Print("invoke: received a request")
 
 	path := r.URL.Path
 
